@@ -35,19 +35,20 @@ Supports:
 
 ## Items
 3. Register your dice items inside `ox_inventory/data/items.lua`:
+   
 ```lua
 ['diamond_dice'] = {
-		label = 'Diamond Dice',
-		weight =50,
-		stack = false,
-		close = true,
-		consume = 0.05, --20 uses
-		description = 'Rolls 2d20',
-		metadata = {
-			dices = 2,
-			sides = 20,
-		}
-	},
+    label = 'Diamond Dice',
+    weight =50,
+    stack = false,
+    close = true,
+    consume = 0.05, --20 uses
+    description = 'Rolls 2d20',
+    metadata = {
+        dices = 2,
+        sides = 20,
+   }
+},
 ['wooden_dice'] = {
     label = 'Wooden Dice',
     weight = 50,
