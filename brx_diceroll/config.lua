@@ -1,5 +1,6 @@
 RollDice = {}
 
+RollDice.Debug = false
 
 RollDice.DiceItems = { -- Add any dice you want here, must match the items you add to inventory
     'diamond_dice',
