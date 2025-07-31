@@ -1,4 +1,4 @@
-# 🎲 RollDice Script for QBCore / QBox (ox_lib + ox_inventory)
+# 🎲 RollDice Script for QBox (ox_lib + ox_inventory)
 
 A flexible, configurable dice-rolling system for FiveM servers using `ox_lib` and `ox_inventory`.  
 Supports:
