@@ -1,5 +1,10 @@
 local RollDice = require 'config'
 
+function DebugPrint(...)
+    if RollDice.Debug then
+        print("[DEBUG]", ...)
+    end
+end
 --- ox_inventory server-side item callback
 --- @param event    string    "usingItem" | "usedItem" | "buying"
 --- @param item     table     the item being used
