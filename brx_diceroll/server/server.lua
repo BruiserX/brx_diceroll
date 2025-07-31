@@ -27,7 +27,7 @@ function UseDiceItem(event, item, inventory, slot, data)
         dices = math.min(math.max(dices, RollDice.MinDices), RollDice.MaxDices)
         sides = math.min(math.max(sides, RollDice.MinSides), RollDice.MaxSides)
 
-        print(('[Dice] %s used %s (%d x d%d)'):format(
+        DebugPrint(('[Dice] %s used %s (%d x d%d)'):format(
             GetPlayerName(src) or 'Unknown',
             item.name or 'nil',
             dices, sides
@@ -67,7 +67,7 @@ function RollDice_ServerEvent(src, dices, sides)
     TriggerClientEvent("RollDice:Client:Roll", -1, src, RollDice.MaxDistance, results, sides, coords)
 
     local playerName = GetPlayerName(src) or 'Unknown'
-    print(('[Dice] %s rolled %d x d%d'):format(playerName, dices, sides))
+    DebugPrint(('[Dice] %s rolled %d x d%d'):format(playerName, dices, sides))
 end
 
 -- From client: slash menu or manual roll
