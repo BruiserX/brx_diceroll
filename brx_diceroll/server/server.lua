@@ -64,21 +64,21 @@ function RollDice_ServerEvent(src, dices, sides)
     end
 
     local coords = GetEntityCoords(GetPlayerPed(src))
-    TriggerClientEvent("RollDice:Client:Roll", -1, src, RollDice.MaxDistance, results, sides, coords)
+    TriggerClientEvent("brx_diceroll:Client:Roll", -1, src, RollDice.MaxDistance, results, sides, coords)
 
     local playerName = GetPlayerName(src) or 'Unknown'
     DebugPrint(('[Dice] %s rolled %d x d%d'):format(playerName, dices, sides))
 end
 
 -- From client: slash menu or manual roll
-RegisterNetEvent("RollDice:Server:Event", function(dices, sides)
+RegisterNetEvent("brx_diceroll:Server:Event", function(dices, sides)
     RollDice_ServerEvent(source, dices, sides)
 end)
 
 -- Optional slash command
 if RollDice.UseCommand then
     RegisterCommand(RollDice.ChatCommand, function(source)
-        TriggerClientEvent("RollDice:Client:OpenRollMenu", source)
+        TriggerClientEvent("brx_diceroll:Client:OpenRollMenu", source)
     end, false)
 end
     
