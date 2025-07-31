@@ -2,7 +2,7 @@ local RollDice = require 'config'
 local globalPlayerPedId = cache.ped 
 
 
-RegisterNetEvent('RollDice:Client:OpenRollMenu', function()
+RegisterNetEvent('brx_diceroll:Client:OpenRollMenu', function()
     local input = lib.inputDialog('Roll Dice', {
         { type = 'number', label = 'Number of Dice', default = 1, min = RollDice.MinDices, max = RollDice.MaxDices },
         { type = 'number', label = 'Sides per Die', default = 6, min = RollDice.MinSides, max = RollDice.MaxSides }
@@ -15,10 +15,10 @@ RegisterNetEvent('RollDice:Client:OpenRollMenu', function()
 
     if not dices or not sides then return end
 
-    TriggerServerEvent("RollDice:Server:Event", dices, sides)
+    TriggerServerEvent("brx_diceroll:Server:Event", dices, sides)
 end)
 
-RegisterNetEvent("RollDice:Client:Roll", function(sourceId, maxDistance, rollTable, sides, location)
+RegisterNetEvent("brx_diceroll:Client:Roll", function(sourceId, maxDistance, rollTable, sides, location)
     local rollString = CreateRollString(rollTable, sides)
 
     if location.x == 0.0 and location.y == 0.0 and location.z == 0.0 then
