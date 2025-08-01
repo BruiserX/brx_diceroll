@@ -1,10 +1,11 @@
-local RollDice = require 'config'
+local Config = require 'config'
 
 function DebugPrint(...)
-    if RollDice.Debug then
+    if Config.Debug then
         print("[DEBUG]", ...)
     end
 end
+
 --- ox_inventory server-side item callback
 --- @param event    string    "usingItem" | "usedItem" | "buying"
 --- @param item     table     the item being used
@@ -21,11 +22,11 @@ function UseDiceItem(event, item, inventory, slot, data)
 
     -- Only roll on the *actual* use completion
     if event == 'usedItem' then
-        local dices = tonumber(item.metadata?.dices) or RollDice.DefaultDices or 1
-        local sides = tonumber(item.metadata?.sides) or RollDice.DefaultSides or 6
+        local dices = tonumber(item.metadata?.dices) or Config.DefaultDices or 1
+        local sides = tonumber(item.metadata?.sides) or Config.DefaultSides or 6
 
-        dices = math.min(math.max(dices, RollDice.MinDices), RollDice.MaxDices)
-        sides = math.min(math.max(sides, RollDice.MinSides), RollDice.MaxSides)
+        dices = math.min(math.max(dices, Config.MinDices), Config.MaxDices)
+        sides = math.min(math.max(sides, Config.MinSides), Config.MaxSides)
 
         DebugPrint(('[Dice] %s used %s (%d x d%d)'):format(
             GetPlayerName(src) or 'Unknown',
@@ -47,11 +48,11 @@ function RollDice_ServerEvent(src, dices, sides)
     sides = tonumber(sides) or 6
 
     -- Clamp + validate
-    if dices < RollDice.MinDices or dices > RollDice.MaxDices
-    or sides < RollDice.MinSides or sides > RollDice.MaxSides then
+    if dices < Config.MinDices or dices > Config.MaxDices
+    or sides < Config.MinSides or sides > Config.MaxSides then
         TriggerClientEvent('ox_lib:notify', src, {
-            title = RollDice.ChatPrefix,
-            description = ('Invalid input. Max %s dice and %s sides.'):format(RollDice.MaxDices, RollDice.MaxSides),
+            title = Config.ChatPrefix,
+            description = ('Invalid input. Max %s dice and %s sides.'):format(Config.MaxDices, Config.MaxSides),
             type = 'error'
         })
         return
@@ -64,7 +65,7 @@ function RollDice_ServerEvent(src, dices, sides)
     end
 
     local coords = GetEntityCoords(GetPlayerPed(src))
-    TriggerClientEvent("brx_diceroll:Client:Roll", -1, src, RollDice.MaxDistance, results, sides, coords)
+    TriggerClientEvent("brx_diceroll:Client:Roll", -1, src, Config.MaxDistance, results, sides, coords)
 
     local playerName = GetPlayerName(src) or 'Unknown'
     DebugPrint(('[Dice] %s rolled %d x d%d'):format(playerName, dices, sides))
@@ -76,8 +77,8 @@ RegisterNetEvent("brx_diceroll:Server:Event", function(dices, sides)
 end)
 
 -- Optional slash command
-if RollDice.UseCommand then
-    RegisterCommand(RollDice.ChatCommand, function(source)
+if Config.UseCommand then
+    RegisterCommand(Config.ChatCommand, function(source)
         TriggerClientEvent("brx_diceroll:Client:OpenRollMenu", source)
     end, false)
 end
