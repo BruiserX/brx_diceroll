@@ -1,11 +1,11 @@
-local RollDice = require 'config'
+local Config = require 'config'
 local globalPlayerPedId = cache.ped 
 
 
 RegisterNetEvent('brx_diceroll:Client:OpenRollMenu', function()
     local input = lib.inputDialog('Roll Dice', {
-        { type = 'number', label = 'Number of Dice', default = 1, min = RollDice.MinDices, max = RollDice.MaxDices },
-        { type = 'number', label = 'Sides per Die', default = 6, min = RollDice.MinSides, max = RollDice.MaxSides }
+        { type = 'number', label = 'Number of Dice', default = 1, min = Config.MinDices, max = Config.MaxDices },
+        { type = 'number', label = 'Sides per Die', default = 6, min = Config.MinSides, max = Config.MaxSides }
     })
 
     if not input then return end
@@ -69,8 +69,8 @@ function ShowRoll(text, sourceId, maxDistance, location)
         if activeDisplays[sourceId] then return end
         activeDisplays[sourceId] = true
 
-        local displayTime = RollDice.ShowTime * 1000
-        local baseZ = location.z + RollDice.Offset - 1.25
+        local displayTime = Config.ShowTime * 1000
+        local baseZ = location.z + Config.Offset - 1.25
         local serverPed = GetPlayerPed(GetPlayerFromServerId(sourceId))
 
         CreateThread(function()
