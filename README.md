@@ -22,6 +22,7 @@ A modern, feature-rich dice rolling system for FiveM QBox servers with physical 
 - [QBox Core (qbx_core)](https://github.com/Qbox-project/qbx_core)
 - [ox_lib](https://github.com/overextended/ox_lib)
 - [ox_inventory](https://github.com/overextended/ox_inventory)
+- [Custom Dice Props by atenea03](https://github.com/atenea03/Dice) - Optional but recommended for best visual quality
 
 ---
 
@@ -129,10 +130,25 @@ Config.MaxSides = 1000 -- Maximum sides per die
 ```lua
 Config.MaxDistance = 7.0 -- Viewing distance in meters
 Config.ShowTime = 7 -- Seconds before dice despawn
-Config.DiceProp = 'hei_prop_heist_box' -- GTA prop model for dice
+Config.DiceProp = 'ate_dice_a' -- Dice prop model (see Custom Dice Props below)
 Config.ThrowForce = 0.6 -- Physics force when throwing
 Config.DUIHeight = 0.5 -- UI height above dice (meters)
 ```
+
+#### Custom Dice Props
+This script uses custom optimized dice props by [atenea03](https://github.com/atenea03/Dice):
+- **Download**: [Get the dice props here](https://github.com/atenea03/Dice)
+- **Models**: `ate_dice_a` or `ate_dice_b` (150 polygons, highly optimized)
+- **Installation**: 
+  1. Download and place the `ate_dice` resource in your resources folder
+  2. Add `ensure ate_dice` to your server.cfg **before** `ensure brx_diceroll`
+  3. The props will automatically load
+
+**Alternative Props**: If you don't want to use custom props, you can use default GTA props:
+- `prop_rub_cage_01a` - Small cage prop
+- `prop_tennis_ball` - Tennis ball
+- `hei_prop_heist_box` - Small box
+- Any other small prop model
 
 ---
 
