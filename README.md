@@ -248,14 +248,3 @@ Edit the `.dice-ui` class in `dice-ui.html` to change:
 ### Special Thanks
 - **[atenea03](https://github.com/atenea03/Dice)** - For the custom optimized dice prop models (150 polygons, 2 models)
 
----
-
-## 🔮 Future Ideas
-
-- Different prop models per dice type
-- Custom dice textures
-- Sound effects when rolling
-- Critical success/failure notifications
-- Roll history/statistics
-- Dice presets (advantage/disadvantage)
-- Animation variations
