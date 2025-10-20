@@ -241,8 +241,12 @@ Edit the `.dice-ui` class in `dice-ui.html` to change:
 
 **Author**: BruiserX  
 **Framework**: QBox  
+**Dice Props**: [atenea03 - Custom Dice Models](https://github.com/atenea03/Dice)  
 **Version**: 1.0.0  
 **License**: MIT
+
+### Special Thanks
+- **[atenea03](https://github.com/atenea03/Dice)** - For the custom optimized dice prop models (150 polygons, 2 models)
 
 ---
 
