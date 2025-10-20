@@ -1,63 +1,257 @@
-# 🎲 RollDice Script for QBox (ox_lib + ox_inventory)
+# 🎲 BRX Dice Roll - Advanced Dice System for QBox
 
-A flexible, configurable dice-rolling system for FiveM servers using `ox_lib` and `ox_inventory`.  
-Supports:
+A modern, feature-rich dice rolling system for FiveM QBox servers with physical dice props, animated rolls, and stylish UI.
 
-- ✅ Slash command menu (`/roll`)
-- ✅ Multiple usable dice items with metadata (`dices`, `sides`, `uses`)
-- ✅ Configurable 3D text display
-- ✅ Optional durability tracking
+## ✨ Features
+
+- 🎲 **Physical Dice Props** - Dice are thrown as physical objects in the game world
+- 🎨 **Modern NUI** - Clean, styled UI with orange borders and black background
+- 📍 **3D Attached UI** - Results display above the physical dice in world space
+- 🎬 **Roll Animations** - Player performs throwing animation when rolling
+- 👥 **Multiplayer Sync** - All nearby players see the same dice and results
+- 📏 **Distance-Based** - Only visible within configurable range (default 7m)
+- ⚙️ **Highly Configurable** - Customize dice types, limits, props, and display settings
+- 🎯 **Item-Based Rolling** - Use custom dice items with durability tracking
+- 💬 **Command Support** - Optional `/roll` command with input dialog
+- 🔄 **Auto-Cleanup** - Dice automatically despawn after configured time
 
 ---
 
 ## 🔧 Requirements
 
-- [ox_lib](https://overextended.dev/ox_lib/)
-- [ox_inventory](https://overextended.dev/ox_inventory/)
-- [qbx_core](https://github.com/qbcore-framework/qbx-core)
-
----
-
-## 🧠 Features
-
-- 🎲 Roll dice using a slash command **menu**
-- 🎯 Use **custom items** to roll preset dice (e.g. 2d20, 3d6)
-- 🧮 Fully **configurable limits** (min/max sides & dices)
-- ♻️ Optional **limited-use dice items** (`uses = 5`)
-- 🗣️ Shows animated 3D roll results nearby
+- [QBox Core (qbx_core)](https://github.com/Qbox-project/qbx_core)
+- [ox_lib](https://github.com/overextended/ox_lib)
+- [ox_inventory](https://github.com/overextended/ox_inventory)
 
 ---
 
 ## 📦 Installation
 
-1. Drop the resource into your `resources/` folder
-2. Add to your `server.cfg`:
+### 1. Add Resource
+Place the `brx_diceroll` folder in your `resources/[brx]/` directory
 
-## Items
-3. Register your dice items inside `ox_inventory/data/items.lua`:
+### 2. Add to server.cfg
+```cfg
+ensure brx_diceroll
+```
+
+### 3. Configure Items in ox_inventory
+Add dice items to `ox_inventory/data/items.lua`:
+
 ```lua
 ['diamond_dice'] = {
-	label = 'Diamond Dice',
-	weight =50,
-	stack = false,
-	close = true,
-	consume = 0.05, --20 uses
-	description = 'Rolls 2d20',
-	metadata = {
-		dices = 2,
-		sides = 20,
-	}
+    label = 'Diamond Dice',
+    weight = 50,
+    stack = false,
+    close = true,
+    consume = 0.05, -- 20 uses (1/20 = 0.05)
+    rarity = 'rare',
+    description = 'Rolls 2d6',
+    server = {
+        export = 'brx_diceroll.useDice',
+    },
 },
+
 ['wooden_dice'] = {
     label = 'Wooden Dice',
     weight = 50,
     stack = true,
     close = true,
     consume = 0.1, -- 10 uses
+    rarity = 'uncommon',
     description = 'Rolls 1d6',
-    metadata = {
-        dices = 1,
-        sides = 6
-    }
+    server = {
+        export = 'brx_diceroll.useDice',
+    },
+},
+
+['god_dice'] = {
+    label = 'God Dice',
+    weight = 50,
+    stack = false,
+    close = true,
+    consume = 0.01, -- 100 uses
+    rarity = 'legendary',
+    description = 'Rolls 1d100',
+    server = {
+        export = 'brx_diceroll.useDice',
+    },
 },
 ```
+
+### 4. Configure Dice Defaults
+Edit `config.lua` to set default roll configurations:
+
+```lua
+Config.DiceDefaults = {
+    diamond_dice = { dices = 2, sides = 6 },
+    wooden_dice = { dices = 1, sides = 6 },
+    god_dice = { dices = 1, sides = 100 }
+}
+```
+
+---
+
+## ⚙️ Configuration
+
+Edit `config.lua` to customize behavior:
+
+### Debug Mode
+```lua
+Config.Debug = false -- Enable debug prints
+```
+
+### Dice Items
+```lua
+Config.DiceItems = {
+    'diamond_dice',
+    'wooden_dice',
+    'god_dice'
+}
+```
+
+### Command Settings
+```lua
+Config.UseCommand = true -- Enable/disable /roll command
+Config.ChatCommand = "roll" -- Command name
+Config.ChatPrefix = "SYSTEM" -- Chat prefix for messages
+```
+
+### Roll Limits
+```lua
+Config.MinDices = 1 -- Minimum dice to roll
+Config.MaxDices = 3 -- Maximum dice to roll
+Config.MinSides = 2 -- Minimum sides per die
+Config.MaxSides = 1000 -- Maximum sides per die
+```
+
+### Display Settings
+```lua
+Config.MaxDistance = 7.0 -- Viewing distance in meters
+Config.ShowTime = 7 -- Seconds before dice despawn
+Config.DiceProp = 'hei_prop_heist_box' -- GTA prop model for dice
+Config.ThrowForce = 0.6 -- Physics force when throwing
+Config.DUIHeight = 0.5 -- UI height above dice (meters)
+```
+
+---
+
+## 🎮 Usage
+
+### Using Dice Items
+1. Add dice items to your inventory
+2. Use the item from your inventory
+3. Watch the roll animation and see the results!
+
+### Using /roll Command
+1. Type `/roll` in chat
+2. Enter number of dice (1-3)
+3. Enter number of sides per die (2-1000)
+4. Watch the roll animation and see the results!
+
+### Viewing Results
+- Results appear as UI elements floating above the physical dice props
+- Only visible to players within 7 meters (configurable)
+- Automatically disappear after 7 seconds (configurable)
+- Players who walk up after the roll can still see active dice
+
+---
+
+## 🎨 UI Customization
+
+The UI is built with HTML/CSS and can be customized in `web/dice-ui.html`:
+
+### Current Styling
+- Black background with 75% opacity
+- Orange (#ffa500) borders
+- 18px white text with shadow
+- Rounded corners (8px)
+- Centered above dice props
+
+### Modify Appearance
+Edit the `.dice-ui` class in `dice-ui.html` to change:
+- Background color/opacity
+- Border color/thickness
+- Font size/style
+- Padding/sizing
+- Border radius
+
+---
+
+## 🔄 How It Works
+
+### Roll Flow
+1. **Player triggers roll** (via item or command)
+2. **Animation plays** (2.4 second throwing animation)
+3. **Server generates results** (random numbers based on dice config)
+4. **Physical dice spawn** (networked props with physics)
+5. **UI displays results** (floating above each die)
+6. **Auto-cleanup** (dice and UI removed after ShowTime)
+
+### Multiplayer Sync
+- **Roller**: Spawns physical dice props and sees UI
+- **Nearby players**: See the same physical dice props and UI
+- **Late arrivals**: Players walking up after roll can still see active dice
+- **Distance check**: Only visible within MaxDistance range
+
+---
+
+## 🛠️ Technical Details
+
+### Networked Entities
+- Dice are spawned as networked objects for proper multiplayer sync
+- Network IDs are broadcast to nearby players
+- Clients reference the same physical entities (no duplicates)
+
+### Performance
+- Efficient render loop using World3dToScreen2d
+- Distance checks to hide UI when too far
+- Automatic cleanup prevents entity buildup
+- Request-based system for late arrivals (checks every 1 second)
+
+### Dependencies
+- `ox_lib` for animations, models, and input dialogs
+- `ox_inventory` for item system and durability
+- `qbx_core` for player data and character info
+
+---
+
+## 🐛 Troubleshooting
+
+### Dice not appearing
+- Ensure `Config.DiceProp` is a valid GTA prop model
+- Check that the model exists and is spelled correctly
+
+### UI not showing for other players
+- Verify players are within `Config.MaxDistance`
+- Check that dice are networked (3rd parameter = true in CreateObject)
+
+### Animation not playing
+- Make sure animation dictionary loads successfully
+- Check F8 console for any errors
+
+### Items not working
+- Verify `server.export` is set in ox_inventory items.lua
+- Ensure dice item names match `Config.DiceItems`
+- Check `Config.DiceDefaults` has entries for your items
+
+---
+
+## 📝 Credits
+
+**Author**: BruiserX  
+**Framework**: QBox  
+**Version**: 1.0.0  
+**License**: MIT
+
+---
+
+## 🔮 Future Ideas
+
+- Different prop models per dice type
+- Custom dice textures
+- Sound effects when rolling
+- Critical success/failure notifications
+- Roll history/statistics
+- Dice presets (advantage/disadvantage)
+- Animation variations
