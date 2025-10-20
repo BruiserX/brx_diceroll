@@ -29,7 +29,7 @@ Config.MaxSides = 1000 -- Max amount of sides on a dice. Default is 20.
 --Dice Display options
 Config.MaxDistance = 7.0 -- Distance players can see the dice rolls
 Config.ShowTime = 7 -- Time in seconds before dice despawn
-Config.DiceProp = 'hei_prop_heist_box' -- Dice prop model (small cube-like props: prop_rub_cage_01a, prop_tennis_ball, prop_cs_box_clothes)
+Config.DiceProp = 'ate_dice_a' -- Dice prop model (ate_dice_a or ate_dice_b)
 Config.ThrowForce = 0.6 -- Force applied when throwing dice
 Config.DUIHeight = 0.5 -- Height above dice to draw DUI (in meters)
 

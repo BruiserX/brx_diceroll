@@ -114,105 +114,9 @@ CreateThread(function()
     end
 end)
 
--- Event for the roller to spawn physical dice with UI
-RegisterNetEvent('brx_diceroll:Client:SpawnDice', function(playerName, rollTable, sides)
-    CreateThread(function()
-        local playerPed = cache.ped
-        local coords = GetEntityCoords(playerPed)
-        local heading = GetEntityHeading(playerPed)
-        local forward = GetEntityForwardVector(playerPed)
-        
-        local diceNetIds = {}
-        
-        -- Spawn dice for each roll
-        for i, result in ipairs(rollTable) do
-            local model = Config.DiceProp
-            local modelHash = GetHashKey(model)
-            
-            lib.requestModel(modelHash, 5000)
-            
-            if not HasModelLoaded(modelHash) then
-                print("[brx_diceroll] Failed to load dice model:", model)
-                return
-            end
-            
-            -- Spawn dice slightly in front of player with some spread
-            local offset = vector3(
-                forward.x * 0.8 + (math.random(-30, 30) / 100.0),
-                forward.y * 0.8 + (math.random(-30, 30) / 100.0),
-                0.5
-            )
-            
-            local spawnCoords = coords + offset
-            
-            -- Create networked object so other clients can see it
-            local dice = CreateObject(modelHash, spawnCoords.x, spawnCoords.y, spawnCoords.z, true, true, true)
-            SetEntityCollision(dice, true, true)
-            
-            -- Wait for network ID to be assigned
-            local timeout = GetGameTimer() + 1000
-            while not NetworkGetEntityIsNetworked(dice) and GetGameTimer() < timeout do
-                Wait(0)
-            end
-            
-            -- Get network ID for syncing
-            local netId = NetworkGetNetworkIdFromEntity(dice)
-            table.insert(diceNetIds, {netId = netId, result = result})
-            
-            -- Apply physics force to throw the dice
-            local throwDir = vector3(
-                forward.x + (math.random(-30, 30) / 100.0),
-                forward.y + (math.random(-30, 30) / 100.0),
-                0.5
-            )
-            
-            ApplyForceToEntity(dice, 1,
-                throwDir.x * Config.ThrowForce,
-                throwDir.y * Config.ThrowForce,
-                throwDir.z * Config.ThrowForce,
-                math.random(-100, 100) / 100.0,
-                math.random(-100, 100) / 100.0,
-                math.random(-100, 100) / 100.0,
-                0, false, true, true, false, true
-            )
-            
-            table.insert(activeDice, {
-                entity = dice,
-                result = result,
-                sides = sides,
-                playerName = playerName,
-                startTime = GetGameTimer()
-            })
-            
-            -- Clean up after ShowTime
-            SetTimeout(Config.ShowTime * 1000, function()
-                -- Remove from NUI
-                SendNUIMessage({
-                    action = 'removeDice',
-                    diceId = dice
-                })
-                
-                DeleteObject(dice)
-                SetModelAsNoLongerNeeded(modelHash)
-                
-                -- Remove from activeDice table
-                for idx, diceData in ipairs(activeDice) do
-                    if diceData.entity == dice then
-                        table.remove(activeDice, idx)
-                        break
-                    end
-                end
-            end)
-        end
-        
-        -- Broadcast network IDs to nearby players
-        Wait(100) -- Small delay to ensure all dice are fully networked
-        TriggerServerEvent('brx_diceroll:Server:BroadcastDice', diceNetIds, rollTable, sides)
-    end)
-end)
 
 -- Event for nearby players to display UI for networked dice
-RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds, rollTable, sides, playerName)
+RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds, rollTable, sides)
     for i, diceData in ipairs(diceNetIds) do
         CreateThread(function()
             local netId = diceData.netId
@@ -245,7 +149,6 @@ RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds,
                         entity = dice,
                         result = result,
                         sides = sides,
-                        playerName = playerName,
                         startTime = GetGameTimer()
                     })
                     

@@ -45,83 +45,103 @@ if Config.UseCommand then
     end, false)
 end
 
--- 3) Client calls this after its animation finishes
 RegisterNetEvent('brx_diceroll:Server:DoRoll', function(dices, sides)
     local src = source
 
-    -- Clamp & validate
-    dices = math.tointeger(dices) or Config.MinDices
-    sides = math.tointeger(sides) or Config.MinSides
-    dices = math.min(math.max(dices, Config.MinDices), Config.MaxDices)
-    sides = math.min(math.max(sides, Config.MinSides), Config.MaxSides)
+    -- Validate input
+    dices = math.min(math.max(math.tointeger(dices) or Config.MinDices, Config.MinDices), Config.MaxDices)
+    sides = math.min(math.max(math.tointeger(sides) or Config.MinSides, Config.MinSides), Config.MaxSides)
 
-    Dbg("Rolling", src, dices, "d", sides)
+    local ped = GetPlayerPed(src)
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    local forward = vec2(-math.sin(math.rad(heading)), math.cos(math.rad(heading)))
 
-    -- Get player name
-    local player = exports.qbx_core:GetPlayer(src)
-    local playerName = "Unknown"
-    if player then
-        playerName = ('%s %s'):format(player.PlayerData.charinfo.firstname, player.PlayerData.charinfo.lastname)
-    end
-
-    -- Perform the roll
+    -- Roll the dice
     local results = {}
     for i = 1, dices do
-        table.insert(results, math.random(1, sides))
+        results[i] = math.random(1, sides)
     end
 
-    -- Send to the roller to spawn physical dice and get network IDs
-    TriggerClientEvent('brx_diceroll:Client:SpawnDice', src, playerName, results, sides)
-end)
-
--- Client sends back the network IDs of spawned dice so nearby players can track them
-RegisterNetEvent('brx_diceroll:Server:BroadcastDice', function(diceNetIds, results, sides)
-    local src = source
-    local coords = GetEntityCoords(GetPlayerPed(src))
+    -- Load model and request collision
+    local model = GetHashKey(Config.DiceProp)
+    RequestModel(model)
+    RequestCollisionAtCoord(coords.x, coords.y, coords.z)
     
-    -- Get player name
-    local player = exports.qbx_core:GetPlayer(src)
-    local playerName = "Unknown"
-    if player then
-        playerName = ('%s %s'):format(player.PlayerData.charinfo.firstname, player.PlayerData.charinfo.lastname)
+    local timeout = 0
+    while not HasModelLoaded(model) and timeout < 100 do
+        Wait(10)
+        timeout = timeout + 1
     end
     
-    -- Store dice globally
-    local uniqueId = string.format("%s_%s", src, GetGameTimer())
+    if not HasModelLoaded(model) then
+        Dbg("Failed to load model:", Config.DiceProp)
+        return
+    end
+    
+    Wait(100) -- Allow collision to load
+
+    -- Spawn dice
+    local diceNetIds = {}
+    for i, result in ipairs(results) do
+        local offset = vec3(
+            forward.x * 0.8 + math.random(-30, 30) / 100,
+            forward.y * 0.8 + math.random(-30, 30) / 100,
+            0.05
+        )
+        
+        local dice = CreateObjectNoOffset(model, coords.x + offset.x, coords.y + offset.y, coords.z + offset.z, true, true, false)
+        
+        if DoesEntityExist(dice) then
+            local throwDir = vec3(
+                forward.x + math.random(-30, 30) / 100,
+                forward.y + math.random(-30, 30) / 100,
+                0.3
+            )
+            
+            ApplyForceToEntity(dice, 1,
+                throwDir.x * Config.ThrowForce,
+                throwDir.y * Config.ThrowForce,
+                throwDir.z * Config.ThrowForce,
+                math.random(-100, 100) / 100,
+                math.random(-100, 100) / 100,
+                math.random(-100, 100) / 100,
+                0, false, true, true, false, true
+            )
+            
+            diceNetIds[#diceNetIds + 1] = {netId = NetworkGetNetworkIdFromEntity(dice), result = result}
+            
+            SetTimeout(Config.ShowTime * 1000, function()
+                if DoesEntityExist(dice) then DeleteEntity(dice) end
+            end)
+        end
+    end
+    
+    SetModelAsNoLongerNeeded(model)
+    Wait(100) -- Allow networking
+
+    -- Store and broadcast
+    local uniqueId = ("%s_%s"):format(src, GetGameTimer())
     activeDiceGlobal[uniqueId] = {
         netIds = diceNetIds,
         results = results,
         sides = sides,
-        playerName = playerName,
         coords = coords,
         endTime = os.time() + Config.ShowTime
     }
     
-    -- Remove after ShowTime
     SetTimeout(Config.ShowTime * 1000, function()
         activeDiceGlobal[uniqueId] = nil
     end)
-    
-    -- Send dice network IDs to nearby players (excluding the roller)
+
     for _, pid in ipairs(GetPlayers()) do
-        if tonumber(pid) ~= src then
-            local ped = GetPlayerPed(pid)
-            if DoesEntityExist(ped) then
-                local dist = #(coords - GetEntityCoords(ped))
-                if dist <= Config.MaxDistance then
-                    TriggerClientEvent(
-                        'brx_diceroll:Client:ShowDiceFromNetwork',
-                        pid,
-                        diceNetIds,
-                        results,
-                        sides,
-                        playerName
-                    )
-                end
-            end
+        local otherPed = GetPlayerPed(tonumber(pid))
+        if DoesEntityExist(otherPed) and #(coords - GetEntityCoords(otherPed)) <= Config.MaxDistance then
+            TriggerClientEvent('brx_diceroll:Client:ShowDiceFromNetwork', tonumber(pid), diceNetIds, results, sides)
         end
     end
 end)
+
 
 -- Client requests active dice when they move into range
 RegisterNetEvent('brx_diceroll:Server:RequestActiveDice', function()
@@ -133,14 +153,7 @@ RegisterNetEvent('brx_diceroll:Server:RequestActiveDice', function()
         if os.time() < diceData.endTime then
             local dist = #(playerCoords - diceData.coords)
             if dist <= Config.MaxDistance then
-                TriggerClientEvent(
-                    'brx_diceroll:Client:ShowDiceFromNetwork',
-                    src,
-                    diceData.netIds,
-                    diceData.results,
-                    diceData.sides,
-                    diceData.playerName
-                )
+                TriggerClientEvent('brx_diceroll:Client:ShowDiceFromNetwork', src, diceData.netIds, diceData.results, diceData.sides)
             end
         end
     end
