@@ -1,86 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: transparent;
-        }
-        
-        .dice-container {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        .dice-ui {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.75);
-            border: 2px solid #ffa500;
-            border-radius: 8px;
-            padding: 10px 16px;
-            min-width: 50px;
-            text-align: center;
-            font-family: 'Arial', sans-serif;
-            font-weight: bold;
-            color: white;
-            font-size: 18px;
-            text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.9);
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-    </style>
+    <link rel="stylesheet" href="dice-ui.css">
 </head>
 <body>
     <div class="dice-container" id="diceContainer"></div>
-    
-    <script>
-        window.addEventListener('message', function(event) {
-            const data = event.data;
-            
-            if (data.action === 'showDice') {
-                showDiceUI(data);
-            } else if (data.action === 'removeDice') {
-                removeDiceUI(data.diceId);
-            }
-        });
-        
-        function showDiceUI(data) {
-            const container = document.getElementById('diceContainer');
-            
-            // Remove existing element if it exists
-            const existing = document.getElementById('dice-' + data.diceId);
-            if (existing) {
-                existing.remove();
-            }
-            
-            const diceElement = document.createElement('div');
-            diceElement.className = 'dice-ui';
-            diceElement.id = 'dice-' + data.diceId;
-            diceElement.textContent = data.result;
-            
-            // Position the UI element using percentages
-            diceElement.style.left = data.screenX + '%';
-            diceElement.style.top = data.screenY + '%';
-            
-            container.appendChild(diceElement);
-        }
-        
-        function removeDiceUI(diceId) {
-            const element = document.getElementById('dice-' + diceId);
-            if (element) {
-                element.remove();
-            }
-        }
-    </script>
+    <script src="dice-ui.js"></script>
 </body>
 </html>

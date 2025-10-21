@@ -9,8 +9,8 @@ end
 local useCooldown = {}
 local rollCooldown = {}
 
--- Store active dice globally so players who walk up can see them
-local activeDiceGlobal = {} -- { [uniqueId] = { netIds, results, sides, coords, endTime } }
+-- Use global statebag to store active dice
+GlobalState.activeDice = {}
 
 -- Export function for ox_inventory to call when dice items are used
 exports('useDice', function(event, item, inventory, slot, data)
@@ -81,30 +81,24 @@ RegisterNetEvent('brx_diceroll:Server:DoRoll', function(dices, sides)
     -- Send roll data to client to spawn and show
     TriggerClientEvent('brx_diceroll:Client:SpawnAndShowDice', src, results, sides, coords, heading)
     
-    -- Broadcast to nearby players
-    for _, pid in ipairs(GetPlayers()) do
-        if tonumber(pid) ~= src then
-            local otherPed = GetPlayerPed(tonumber(pid))
-            if DoesEntityExist(otherPed) and #(coords - GetEntityCoords(otherPed)) <= Config.MaxDistance then
-                TriggerClientEvent('brx_diceroll:Client:SpawnAndShowDice', tonumber(pid), results, sides, coords, heading)
-            end
-        end
-    end
-end)
-
-
--- Client requests active dice when they move into range
-RegisterNetEvent('brx_diceroll:Server:RequestActiveDice', function()
-    local src = source
-    local playerCoords = GetEntityCoords(GetPlayerPed(src))
+    -- Store in global statebag for late arrivals
+    local uniqueId = string.format("%s_%s", src, GetGameTimer())
+    local currentDice = GlobalState.activeDice or {}
     
-    -- Send all active dice that are in range
-    for _, diceData in pairs(activeDiceGlobal) do
-        if os.time() < diceData.endTime then
-            local dist = #(playerCoords - diceData.coords)
-            if dist <= Config.MaxDistance then
-                TriggerClientEvent('brx_diceroll:Client:ShowDiceFromNetwork', src, diceData.netIds, diceData.results, diceData.sides)
-            end
-        end
-    end
+    currentDice[uniqueId] = {
+        results = results,
+        sides = sides,
+        coords = vector3(coords.x, coords.y, coords.z),
+        heading = heading,
+        endTime = GetGameTimer() + (Config.ShowTime * 1000)
+    }
+    
+    GlobalState.activeDice = currentDice
+    
+    -- Remove from statebag after ShowTime
+    SetTimeout(Config.ShowTime * 1000, function()
+        local updatedDice = GlobalState.activeDice or {}
+        updatedDice[uniqueId] = nil
+        GlobalState.activeDice = updatedDice
+    end)
 end)

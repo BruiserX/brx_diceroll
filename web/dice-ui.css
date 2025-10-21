@@ -1,0 +1,36 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+}
+
+.dice-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.dice-ui {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.75);
+    border: 2px solid #ffa500;
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-width: 50px;
+    text-align: center;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    color: white;
+    font-size: 18px;
+    text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}

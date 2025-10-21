@@ -6,8 +6,11 @@ author 'BruiserX'
 
 ui_page 'web/dice-ui.html'
 
+
 files {
-    'web/dice-ui.html'
+    'web/dice-ui.html',
+    'web/dice-ui.css',
+    'web/dice-ui.js'
 }
 
 shared_script {

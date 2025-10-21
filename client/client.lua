@@ -25,7 +25,8 @@ RegisterNetEvent('brx_diceroll:Client:OnUseDice', function(metadata)
     TaskPlayAnim(
       ped,
       animDict, "wank",
-      8.0, -8.0,
+      8.0,
+      -8.0,
       2400,   -- anim length in ms
       49, 0, false, false, false
     )
@@ -59,12 +60,36 @@ end)
 
 -- Active dice table for UI tracking
 local activeDice = {}
+local processedDiceRolls = {} -- Track which rolls we've already spawned
 
--- Periodically request active dice in range (for players who walk up after dice are thrown)
-CreateThread(function()
-    while true do
-        Wait(1000) -- Check every second
-        TriggerServerEvent('brx_diceroll:Server:RequestActiveDice')
+-- Listen for statebag changes to show dice for players who walk up late
+AddStateBagChangeHandler('activeDice', 'global', function(bagName, key, value)
+    if not value then return end
+    
+    local playerCoords = GetEntityCoords(cache.ped)
+    
+    -- Check each dice roll in the statebag
+    for rollId, diceData in pairs(value) do
+        -- Skip if we've already processed this roll
+        if not processedDiceRolls[rollId] then
+            -- Check if in range
+            local dist = #(playerCoords - diceData.coords)
+            if dist <= Config.MaxDistance then
+                -- Check if still active
+                if GetGameTimer() < diceData.endTime then
+                    processedDiceRolls[rollId] = true
+                    -- Spawn the dice
+                    TriggerEvent('brx_diceroll:Client:SpawnAndShowDice', diceData.results, diceData.sides, diceData.coords, diceData.heading)
+                end
+            end
+        end
+    end
+    
+    -- Clean up expired rolls from processed list
+    for rollId, _ in pairs(processedDiceRolls) do
+        if not value[rollId] then
+            processedDiceRolls[rollId] = nil
+        end
     end
 end)
 
