@@ -5,6 +5,7 @@ Config.Debug = false
 Config.DiceItems = { -- Add any dice you want here, must match the items you add to inventory
     'diamond_dice',
     'wooden_dice',
+    'death_dice',
     'god_dice'
 }
 
@@ -13,11 +14,12 @@ Config.DiceDefaults = {
     diamond_dice = { dices = 2, sides = 6 },
     wooden_dice = { dices = 1, sides = 6 },
     god_dice = { dices = 1, sides = 100 }
+--Dice that use the roll menu dont need to be defined here
 }
 
-Config.UseCommand = true --Use command or not.
+Config.UseCommand = false --Use command or not.
 Config.ChatCommand = "roll" --Command name.
-Config.ChatPrefix = "SYSTEM" --This is the chat prefix. If they type a wrong number or invalid one then it will say that SYSTEM has messaged them, just try it.
+Config.RollCooldown = 3000 -- Cooldown between rolls in milliseconds (3000 = 3 seconds)
 
 --Dice options for Roll Menu
 Config.MinDices = 1 -- Minimum amount of dice to roll Must be atleast 1
@@ -29,9 +31,9 @@ Config.MaxSides = 1000 -- Max amount of sides on a dice. Default is 20.
 --Dice Display options
 Config.MaxDistance = 7.0 -- Distance players can see the dice rolls
 Config.ShowTime = 7 -- Time in seconds before dice despawn
-Config.DiceProp = 'ate_dice_a' -- Dice prop model (ate_dice_a or ate_dice_b)
+Config.DiceProp = 'ate_dice_b' -- Dice prop model (ate_dice_a (Oversized dice) or ate_dice_b (Normal dice))
 Config.ThrowForce = 0.6 -- Force applied when throwing dice
-Config.DUIHeight = 0.5 -- Height above dice to draw DUI (in meters)
+Config.DUIHeight = 0.3 -- Height above dice to draw DUI (in meters)
 
 
 return Config  

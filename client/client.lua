@@ -30,13 +30,14 @@ RegisterNetEvent('brx_diceroll:Client:OnUseDice', function(metadata)
       49, 0, false, false, false
     )
     
-    -- Wait for anim to finish
-    Wait(2400)
+    -- Spawn dice near the end of the throwing motion
+    Wait(1800)
+    TriggerServerEvent('brx_diceroll:Server:DoRoll', dices, sides)
+    
+    -- Let animation finish naturally
+    Wait(600)
     ClearPedTasks(ped)
     RemoveAnimDict(animDict)
-
-    -- Now ask server to do the roll
-    TriggerServerEvent('brx_diceroll:Server:DoRoll', dices, sides)
 end)
 
 -- 2) If you’re exposing a slash command UI:
@@ -56,7 +57,7 @@ RegisterNetEvent('brx_diceroll:Client:OpenRollMenu', function()
     TriggerEvent('brx_diceroll:Client:OnUseDice', { dices = dices, sides = sides })
 end)
 
--- 3) Spawn physical dice with DUI showing results
+-- Active dice table for UI tracking
 local activeDice = {}
 
 -- Periodically request active dice in range (for players who walk up after dice are thrown)
@@ -67,10 +68,16 @@ CreateThread(function()
     end
 end)
 
--- Render loop to show NUI attached to dice
+-- Render loop to show NUI attached to dice (only runs when dice are active)
 CreateThread(function()
     while true do
-        Wait(0)
+        -- Only run when dice are active, at reduced rate for performance
+        if #activeDice == 0 then
+            Wait(500)
+            goto continue
+        end
+        
+        Wait(33) -- ~30 FPS instead of 60+ (dice UI doesn't need high refresh rate)
 
         local playerCoords = GetEntityCoords(cache.ped)
 
@@ -111,11 +118,78 @@ CreateThread(function()
                 end
             end
         end
+        
+        ::continue::
     end
 end)
 
 
--- Event for nearby players to display UI for networked dice
+-- Event to spawn dice client-side (no networking issues)
+RegisterNetEvent('brx_diceroll:Client:SpawnAndShowDice', function(results, sides, spawnCoords, spawnHeading)
+    local forward = vec2(-math.sin(math.rad(spawnHeading)), math.cos(math.rad(spawnHeading)))
+    local model = GetHashKey(Config.DiceProp)
+    lib.requestModel(model, 5000)
+    
+    for i, result in ipairs(results) do
+        local offset = vec3(
+            forward.x * 0.8 + math.random(-30, 30) / 100,
+            forward.y * 0.8 + math.random(-30, 30) / 100,
+            0.05
+        )
+        
+        local dice = CreateObject(model, spawnCoords.x + offset.x, spawnCoords.y + offset.y, spawnCoords.z + offset.z, false, false, false)
+        
+        if DoesEntityExist(dice) then
+            local throwDir = vec3(
+                forward.x + math.random(-30, 30) / 100,
+                forward.y + math.random(-30, 30) / 100,
+                0.3
+            )
+            
+            ApplyForceToEntity(dice, 1,
+                throwDir.x * Config.ThrowForce,
+                throwDir.y * Config.ThrowForce,
+                throwDir.z * Config.ThrowForce,
+                math.random(-100, 100) / 100,
+                math.random(-100, 100) / 100,
+                math.random(-100, 100) / 100,
+                0, false, true, true, false, true
+            )
+            
+            -- Wait for settle then add to UI tracking
+            SetTimeout(2000, function()
+                table.insert(activeDice, {
+                    entity = dice,
+                    result = result,
+                    sides = sides
+                })
+            end)
+            
+            -- Cleanup
+            SetTimeout((Config.ShowTime + 2) * 1000, function()
+                SendNUIMessage({
+                    action = 'removeDice',
+                    diceId = dice
+                })
+                
+                for idx, diceData in ipairs(activeDice) do
+                    if diceData.entity == dice then
+                        table.remove(activeDice, idx)
+                        break
+                    end
+                end
+                
+                if DoesEntityExist(dice) then
+                    DeleteObject(dice)
+                end
+            end)
+        end
+    end
+    
+    SetModelAsNoLongerNeeded(model)
+end)
+
+-- Event for nearby players to display UI for networked dice (legacy, can remove later)
 RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds, rollTable, sides)
     for i, diceData in ipairs(diceNetIds) do
         CreateThread(function()
@@ -125,12 +199,12 @@ RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds,
             -- Wait for the entity to be networked (retry mechanism)
             local dice = nil
             local attempts = 0
-            while attempts < 50 do -- Try for up to 2.5 seconds
+            while attempts < 30 do -- Try for up to 600ms
                 dice = NetworkGetEntityFromNetworkId(netId)
                 if DoesEntityExist(dice) then
                     break
                 end
-                Wait(50)
+                Wait(20)
                 attempts = attempts + 1
             end
             
@@ -145,15 +219,17 @@ RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds,
                 end
                 
                 if not alreadyExists then
-                    table.insert(activeDice, {
-                        entity = dice,
-                        result = result,
-                        sides = sides,
-                        startTime = GetGameTimer()
-                    })
+                    -- Wait for dice to settle before showing UI (2 seconds)
+                    SetTimeout(2000, function()
+                        table.insert(activeDice, {
+                            entity = dice,
+                            result = result,
+                            sides = sides
+                        })
+                    end)
                     
-                    -- Clean up after ShowTime (UI only, don't delete the entity)
-                    SetTimeout(Config.ShowTime * 1000, function()
+                    -- Clean up after ShowTime + settle time
+                    SetTimeout((Config.ShowTime + 2) * 1000, function()
                         -- Remove from NUI
                         SendNUIMessage({
                             action = 'removeDice',
@@ -174,4 +250,8 @@ RegisterNetEvent('brx_diceroll:Client:ShowDiceFromNetwork', function(diceNetIds,
             end
         end)
     end
+end)
+
+RegisterNetEvent('brx_diceroll:roll', function()
+    ExecuteCommand('roll')
 end)
