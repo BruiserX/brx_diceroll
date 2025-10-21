@@ -62,33 +62,36 @@ end)
 local activeDice = {}
 local processedDiceRolls = {} -- Track which rolls we've already spawned
 
--- Listen for statebag changes to show dice for players who walk up late
-AddStateBagChangeHandler('activeDice', 'global', function(bagName, key, value)
-    if not value then return end
-    
-    local playerCoords = GetEntityCoords(cache.ped)
-    
-    -- Check each dice roll in the statebag
-    for rollId, diceData in pairs(value) do
-        -- Skip if we've already processed this roll
-        if not processedDiceRolls[rollId] then
-            -- Check if in range
-            local dist = #(playerCoords - diceData.coords)
-            if dist <= Config.MaxDistance then
-                -- Check if still active
-                if GetGameTimer() < diceData.endTime then
-                    processedDiceRolls[rollId] = true
-                    -- Spawn the dice
-                    TriggerEvent('brx_diceroll:Client:SpawnAndShowDice', diceData.results, diceData.sides, diceData.coords, diceData.heading)
+-- Periodically check statebag for dice we haven't seen yet (for players who walk up late)
+CreateThread(function()
+    while true do
+        Wait(1000) -- Check every second
+        
+        local activeDiceState = GlobalState.activeDice or {}
+        local playerCoords = GetEntityCoords(cache.ped)
+        
+        -- Check each dice roll in the statebag
+        for rollId, diceData in pairs(activeDiceState) do
+            -- Skip if we've already processed this roll
+            if not processedDiceRolls[rollId] then
+                -- Check if in range
+                local dist = #(playerCoords - diceData.coords)
+                if dist <= Config.MaxDistance then
+                    -- Check if still active
+                    if GetGameTimer() < diceData.endTime then
+                        processedDiceRolls[rollId] = true
+                        -- Spawn the dice
+                        TriggerEvent('brx_diceroll:Client:SpawnAndShowDice', diceData.results, diceData.sides, diceData.coords, diceData.heading)
+                    end
                 end
             end
         end
-    end
-    
-    -- Clean up expired rolls from processed list
-    for rollId, _ in pairs(processedDiceRolls) do
-        if not value[rollId] then
-            processedDiceRolls[rollId] = nil
+        
+        -- Clean up expired rolls from processed list
+        for rollId, _ in pairs(processedDiceRolls) do
+            if not activeDiceState[rollId] then
+                processedDiceRolls[rollId] = nil
+            end
         end
     end
 end)
@@ -96,13 +99,13 @@ end)
 -- Render loop to show NUI attached to dice (only runs when dice are active)
 CreateThread(function()
     while true do
-        -- Only run when dice are active, at reduced rate for performance
+        -- Only run when dice are active
         if #activeDice == 0 then
             Wait(500)
             goto continue
         end
         
-        Wait(33) -- ~30 FPS instead of 60+ (dice UI doesn't need high refresh rate)
+        Wait(0) -- Update every frame for smooth UI positioning during movement/rotation
 
         local playerCoords = GetEntityCoords(cache.ped)
 
@@ -150,7 +153,9 @@ end)
 
 
 -- Event to spawn dice client-side (no networking issues)
-RegisterNetEvent('brx_diceroll:Client:SpawnAndShowDice', function(results, sides, spawnCoords, spawnHeading)
+RegisterNetEvent('brx_diceroll:Client:SpawnAndShowDice', function(rollId, results, sides, spawnCoords, spawnHeading)
+    -- Mark this roll as processed to prevent statebag from duplicating it
+    processedDiceRolls[rollId] = true
     local forward = vec2(-math.sin(math.rad(spawnHeading)), math.cos(math.rad(spawnHeading)))
     local model = GetHashKey(Config.DiceProp)
     lib.requestModel(model, 5000)

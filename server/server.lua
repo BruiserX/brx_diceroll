@@ -1,5 +1,8 @@
 local Config = require 'config'
 
+-- Seed random number generator for better randomization
+math.randomseed(os.time() + GetGameTimer())
+
 -- Debug print helper
 local function Dbg(...)
     if Config.Debug then print("[brx_diceroll]", ...) end
@@ -72,17 +75,35 @@ RegisterNetEvent('brx_diceroll:Server:DoRoll', function(dices, sides)
     local heading = GetEntityHeading(ped)
     local forward = vec2(-math.sin(math.rad(heading)), math.cos(math.rad(heading)))
 
-    -- Roll the dice
+    -- Roll the dice (with better randomization)
     local results = {}
     for i = 1, dices do
+        -- Add small delay and extra randomization to prevent identical results
+        math.randomseed(os.time() + GetGameTimer() + i * src)
+        math.random() -- Discard first result for better randomization
         results[i] = math.random(1, sides)
     end
 
-    -- Send roll data to client to spawn and show
-    TriggerClientEvent('brx_diceroll:Client:SpawnAndShowDice', src, results, sides, coords, heading)
+    -- Generate unique ID for this roll
+    local uniqueId = string.format("%s_%s", src, GetGameTimer())
+    
+    -- Send roll data to roller to spawn and show
+    TriggerClientEvent('brx_diceroll:Client:SpawnAndShowDice', src, uniqueId, results, sides, coords, heading)
+    
+    -- Broadcast to all nearby players (excluding roller)
+    for _, pid in ipairs(GetPlayers()) do
+        if tonumber(pid) ~= src then
+            local ped = GetPlayerPed(pid)
+            if DoesEntityExist(ped) then
+                local dist = #(coords - GetEntityCoords(ped))
+                if dist <= Config.MaxDistance then
+                    TriggerClientEvent('brx_diceroll:Client:SpawnAndShowDice', pid, uniqueId, results, sides, coords, heading)
+                end
+            end
+        end
+    end
     
     -- Store in global statebag for late arrivals
-    local uniqueId = string.format("%s_%s", src, GetGameTimer())
     local currentDice = GlobalState.activeDice or {}
     
     currentDice[uniqueId] = {
